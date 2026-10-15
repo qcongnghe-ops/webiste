@@ -1,1 +1,931 @@
-ok ok
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POS Lĩnh Công Nghệ - ID Primary Key Sync</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; padding: 12px; margin: 0; background: #f4f6f8; display: flex; flex-direction: column; min-height: 95vh; }
+        .store-header { text-align: center; margin-bottom: 8px; }
+        .store-header h2 { margin: 0; font-size: 18px; color: #333; }
+        .store-header p { margin: 2px 0 0; font-size: 12px; color: #666; }
+
+        .top-nav { display: flex; gap: 6px; margin-bottom: 10px; }
+        .top-nav button { flex: 1; padding: 8px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; background: #e2e8f0; cursor: pointer; }
+        .top-nav button.active { background: #007AFF; color: white; }
+
+        .section-view { display: none; flex-direction: column; flex: 1; }
+        .section-view.active { display: flex; }
+
+        .customer-box { background: white; padding: 10px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #e6e6e6; }
+        .customer-box input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; background: white; }
+        .customer-info { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 13px; color: #007AFF; font-weight: bold; }
+
+        .search-container { position: relative; margin-bottom: 8px; }
+        .search-box-wrapper { display: flex; gap: 6px; }
+        .search-box { flex: 1; padding: 10px; border: 2px solid #007AFF; border-radius: 10px; font-size: 14px; outline: none; background: white; }
+        .btn-action { background: #4CAF50; color: white; border: none; padding: 0 10px; font-size: 14px; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 600; }
+        .btn-action.listening { background: #E91E63; animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.75; } 100% { opacity: 1; } }
+        .btn-camera { background: #9c27b0; }
+        .btn-scan-invoice { background: #e91e63; }
+
+        .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 0 0 10px 10px; max-height: 180px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+        .suggestion-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; justify-content: space-between; font-size: 14px; }
+        
+        .other-service-bar { display: flex; gap: 6px; margin-bottom: 8px; }
+        .other-service-bar input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; background: white; }
+        #osName { flex: 2; }
+        #osPrice { flex: 1; }
+        .btn-other { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+
+        #rvOrders { flex: 1; background: white; border-radius: 10px; padding: 8px 12px; min-height: 100px; border: 1px solid #e6e6e6; overflow-y: auto; max-height: 24vh; }
+        .order-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; gap: 6px; }
+        .name { flex: 1; }
+        .price { font-weight: bold; }
+        .qty-controls { display: flex; align-items: center; gap: 4px; }
+        .qty-btn { background: #e2e8f0; border: none; width: 26px; height: 26px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .qty-num { width: 24px; text-align: center; font-weight: bold; }
+
+        .footer { display: flex; align-items: center; margin-top: 8px; gap: 8px; }
+        #tvTotal { flex: 1; font-size: 17px; font-weight: bold; color: #F44336; }
+        .btn { padding: 10px 12px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; }
+        #btnClear { background: #e0e0e0; color: #333; }
+        #btnCheckout { background: #007AFF; color: white; }
+
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #444; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; background: white; }
+        .product-manage-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e6e6e6; }
+        .product-manage-item div b { display: block; font-size: 15px; }
+        .product-manage-item div span { font-size: 12px; color: #666; }
+        .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-success { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 8px; }
+
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 10px 0; }
+        .pagination button { padding: 6px 12px; font-size: 13px; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer; }
+        .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .history-box { background: white; padding: 10px; border-radius: 10px; margin-top: 8px; font-size: 13px; border: 1px solid #e6e6e6; max-height: 18vh; overflow-y: auto; display: none; }
+        .history-item { padding: 8px 6px; border-bottom: 1px dashed #eee; display: flex; justify-content: space-between; cursor: pointer; }
+        .history-item:hover { background: #f0f4ff; }
+        
+        #paymentArea { display: none; flex-direction: column; align-items: center; background: white; padding: 12px; border-radius: 10px; margin-top: 8px; border: 1px solid #e6e6e6; }
+        #invoiceCanvas { max-width: 100%; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; }
+
+        #modalProduct { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 350px; border-radius: 12px; padding: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
+        #modalDetail { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="store-header">
+        <h2 id="lblStoreName">Tên cửa hàng</h2>
+        <p id="lblStoreContact">Thông tin liên hệ</p>
+    </div>
+
+    <div class="top-nav">
+        <button id="navPos" class="active" onclick="switchTab('pos')">🛒 Bán hàng</button>
+        <button id="navData" onclick="switchTab('data')">📦 Quản lý Bảng giá (ID PK)</button>
+        <button id="navConfig" onclick="switchTab('config')">⚙️ Cài đặt GitHub & Cửa hàng</button>
+    </div>
+
+    <div id="viewPos" class="section-view active">
+        <div class="customer-box">
+            <input type="text" id="customerName" placeholder="👤 Nhập tên khách hàng..." oninput="checkCustomerPoints(this.value)">
+            <div class="customer-info" id="customerPointInfo" style="display:none;">
+                <span id="custNameDisplay">Khách hàng: -</span>
+                <span id="custPointsDisplay" style="color:#28a745;">⭐ Điểm tích luỹ: 0</span>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box-wrapper">
+                <input type="text" id="searchProduct" class="search-box" placeholder="🔍 Gõ tên món hoặc bấm 🎙️ AI nói..." oninput="handleInput(this.value)">
+                <button id="btnVoice" class="btn-action btn-voice" onclick="triggerWebSpeech()" title="AI Nhận diện giọng nói">🎙️ AI</button>
+                
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleCameraScan(event)">
+                <button id="btnCamera" class="btn-action btn-camera" onclick="document.getElementById('cameraInput').click()" title="AI Quét sản phẩm">📷 Quét</button>
+
+                <input type="file" id="invoiceScanInput" accept="image/*" capture="environment" style="display:none;" onchange="handleInvoiceScan(event)">
+                <button id="btnScanInvoice" class="btn-action btn-scan-invoice" onclick="document.getElementById('invoiceScanInput').click()" title="Quét hoá đơn viết tay bắt đầu từ số 1">📸 HĐ</button>
+            </div>
+            <div id="suggestionsList" class="suggestions-list"></div>
+        </div>
+
+        <div class="other-service-bar">
+            <input type="text" id="osName" placeholder="Tên dịch vụ khác / phụ thu...">
+            <input type="number" id="osPrice" placeholder="Giá (đ)...">
+            <button class="btn-other" onclick="addOtherService()">+ Thêm</button>
+        </div>
+
+        <div id="rvOrders"></div>
+
+        <div class="footer">
+            <div id="tvTotal">Tổng: 0 ₫</div>
+            <button class="btn" id="btnClear" onclick="clearCurrentOrder()">Xoá</button>
+            <button class="btn" style="background:#6c757d; color:white;" onclick="toggleHistory()">Lịch sử</button>
+            <button class="btn" id="btnCheckout" onclick="initiateCheckout()">Thanh toán</button>
+        </div>
+
+        <div id="paymentArea">
+            <canvas id="invoiceCanvas" width="350" height="440"></canvas>
+            <img id="ivQrCode" alt="VietQR" style="width: 160px; height: 160px; border-radius: 8px; margin-bottom: 8px;" />
+            <div style="display: flex; gap: 8px; width: 100%;">
+                <button class="btn btn-danger" style="flex:1;" onclick="cancelPayment()">Huỷ bỏ</button>
+                <button class="btn btn-success" style="flex:1; margin-top:0;" onclick="confirmSaveAndFinish()">Xác nhận xong</button>
+            </div>
+        </div>
+
+        <div id="historyContainer" class="history-box">
+            <b>📜 Nhật ký hoá đơn gần đây (Chạm để xem chi tiết):</b>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <div id="modalDetail">
+        <div class="modal-content">
+            <h3 id="modalTitle" style="margin-top:0; text-align:center; font-size:16px;">Chi tiết hoá đơn</h3>
+            <p id="modalTime" style="font-size:12px; color:#666; text-align:center; margin-bottom:10px;"></p>
+            <p id="modalCustomer" style="font-size:13px; font-weight:bold; color:#007AFF; margin-bottom:8px;"></p>
+            <div id="modalItemsList" style="border-top:1px solid #eee; border-bottom:1px solid #eee; padding: 8px 0; max-height: 35vh; overflow-y: auto;"></div>
+            <h4 id="modalTotal" style="text-align:right; color:#F44336; margin: 10px 0;">Tổng: 0đ</h4>
+            <button class="btn btn-success" style="width:100%;" onclick="closeModal()">Đóng</button>
+        </div>
+    </div>
+
+    <div id="modalProduct">
+        <div class="modal-content">
+            <h3 id="modalProductTitle" style="margin-top:0; font-size:16px;">Thêm sản phẩm mới</h3>
+            <input type="hidden" id="editProductId" value="">
+            <div class="form-group"><label>Mã ID sản phẩm (Primary Key)</label><input id="pId" placeholder="VD: 06 hoặc pr_01"></div>
+            <div class="form-group"><label>Tên sản phẩm</label><input id="pName" placeholder="VD: Trà sữa trân châu"></div>
+            <div class="form-group"><label>Giá tiền (VNĐ)</label><input id="pPrice" placeholder="VD: 30000"></div>
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="btn btn-danger" style="flex:1;" onclick="closeProductModal()">Huỷ</button>
+                <button class="btn btn-success" style="flex:1; margin-top:0;" onclick="saveProductItem()">💾 Lưu theo ID</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewData" class="section-view">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 16px;">Quản lý Bảng giá (Primary Key ID)</h3>
+            <div>
+                <button class="btn btn-success" style="padding: 8px 10px; font-size: 12px; background:#17a2b8;" onclick="fetchAllDataFromGitHub()">🔄 Đồng bộ Mây</button>
+                <button class="btn btn-success" style="padding: 8px 10px; font-size: 12px;" onclick="openAddProductModal()">➕ Thêm</button>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom:8px;">
+            <input id="searchManageBox" placeholder="🔍 Tìm kiếm sản phẩm gần giống để sửa/xoá theo ID..." oninput="filterManageProducts(this.value)">
+        </div>
+
+        <div id="productListManage" style="flex: 1; overflow-y: auto; max-height: 52vh;"></div>
+        
+        <div class="pagination" id="paginationBox">
+            <button id="btnPrevPage" onclick="changePage(-1)">Trang trước</button>
+            <span id="pageInfo" style="font-size: 13px; font-weight: 600;">Trang 1 / 1</span>
+            <button id="btnNextPage" onclick="changePage(1)">Trang sau</button>
+        </div>
+    </div>
+
+    <div id="viewConfig" class="section-view">
+        <h3 style="margin: 4px 0 10px; font-size: 16px;">⚙️ Cấu hình GitHub & Cửa hàng</h3>
+        <div class="form-group"><label>Tên cửa hàng</label><input id="cfgStoreName"></div>
+        <div class="form-group"><label>Hotline</label><input id="cfgHotline"></div>
+        <div class="form-group"><label>Địa chỉ</label><input id="cfgAddress"></div>
+        <div class="form-group"><label>Mã Ngân hàng (MB, VCB...)</label><input id="cfgBankId"></div>
+        <div class="form-group"><label>Số tài khoản</label><input id="cfgAccountNo"></div>
+        <div class="form-group"><label>Chủ tài khoản (Không dấu)</label><input id="cfgAccountName"></div>
+        
+        <hr style="margin: 12px 0; border:0; border-top:1px solid #ccc;">
+        <div class="form-group"><label>GitHub Personal Access Token (ghp_...)</label><input id="cfgGhToken" type="password" placeholder="Dán Token GitHub cá nhân..."></div>
+        <div class="form-group"><label>GitHub Username / Owner</label><input id="cfgGhOwner" placeholder="VD: linhcongnghe"></div>
+        <div class="form-group"><label>Tên Repository (Kho chứa)</label><input id="cfgGhRepo" placeholder="VD: pos-database"></div>
+        <div class="form-group"><label>Nhánh (Branch)</label><input id="cfgGhBranch" value="main"></div>
+
+        <button class="btn btn-success" onclick="saveStoreConfigSettings()">💾 Lưu Cài đặt & Đồng bộ GitHub</button>
+    </div>
+
+    <script>
+        let currentConfig = {
+            storeName: "LĨNH CÔNG NGHỆ & POS",
+            hotline: "0912 345 678",
+            address: "Ninh Bình",
+            bankId: "MB",
+            accountNo: "0123456789",
+            accountName: "DINH BO LINH",
+            ghToken: "",
+            ghOwner: "",
+            ghRepo: "",
+            ghBranch: "main"
+        };
+
+        // Lưu trữ dưới dạng Object Key-Value theo ID (Primary Key)
+        let products = {
+            "01": { name: "Cà phê đen đá", aliases: ["ca phe den da", "den da"], price: 20000 },
+            "02": { name: "Cà phê sữa đá", aliases: ["ca phe sua da", "sua da"], price: 25000 },
+            "03": { name: "Bạc xỉu", aliases: ["bac xiu"], price: 25000 },
+            "04": { name: "Trà đào", aliases: ["tra dao"], price: 30000 },
+            "05": { name: "Nước suối", aliases: ["nuoc suoi"], price: 10000 }
+        };
+
+        let customers = {
+            "khach_le": { name: "Khách lẻ", totalSpent: 0, points: 0 }
+        };
+
+        let invoiceHistory = {};
+
+        // GitHub API helper với cơ chế khóa SHA chống xung đột đa thiết bị
+        async function saveFileToGitHub(path, jsonContent, commitMessage) {
+            if (!currentConfig.ghToken || !currentConfig.ghOwner || !currentConfig.ghRepo) {
+                alert("⚠️ Vui lòng cấu hình đầy đủ GitHub Token, Owner và Repo trong Cài đặt!");
+                return false;
+            }
+
+            const apiUrl = `https://api.github.com/repos/${currentConfig.ghOwner}/${currentConfig.ghRepo}/contents/${path}`;
+            const headers = {
+                "Authorization": `token ${currentConfig.ghToken}`,
+                "Content-Type": "application/json"
+            };
+
+            try {
+                let sha = null;
+                const getRes = await fetch(apiUrl, { headers });
+                if (getRes.ok) {
+                    const fileData = await getRes.json();
+                    sha = fileData.sha;
+                }
+
+                const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(jsonContent, null, 4))));
+                const bodyData = {
+                    message: commitMessage || `Update ${path} via POS ID PK`,
+                    content: contentEncoded,
+                    branch: currentConfig.ghBranch || "main"
+                };
+                if (sha) bodyData.sha = sha;
+
+                const putRes = await fetch(apiUrl, {
+                    method: "PUT",
+                    headers,
+                    body: JSON.stringify(bodyData)
+                });
+
+                if (putRes.ok) {
+                    return true;
+                } else {
+                    const err = await putRes.json();
+                    alert("Lỗi đồng bộ GitHub: " + (err.message || "Không thể ghi tệp"));
+                    return false;
+                }
+            } catch (e) {
+                alert("Lỗi kết nối GitHub API: " + e.message);
+                return false;
+            }
+        }
+
+        // Tải toàn bộ dữ liệu Object theo ID từ GitHub
+        async function fetchAllDataFromGitHub() {
+            const savedCfg = localStorage.getItem("store_config");
+            if (savedCfg) {
+                currentConfig = JSON.parse(savedCfg);
+                refreshHeader();
+            }
+
+            if (!currentConfig.ghToken || !currentConfig.ghOwner || !currentConfig.ghRepo) {
+                loadLocalFallback();
+                return;
+            }
+
+            const headers = { "Authorization": `token ${currentConfig.ghToken}` };
+            const baseUrl = `https://api.github.com/repos/${currentConfig.ghOwner}/${currentConfig.ghRepo}/contents`;
+
+            let successCount = 0;
+
+            try {
+                let res = await fetch(`${baseUrl}/products.json`, { headers });
+                if (res.ok) {
+                    let data = await res.json();
+                    products = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+                    successCount++;
+                }
+            } catch (e) {}
+
+            try {
+                let res = await fetch(`${baseUrl}/customers.json`, { headers });
+                if (res.ok) {
+                    let data = await res.json();
+                    customers = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+                    successCount++;
+                }
+            } catch (e) {}
+
+            try {
+                let res = await fetch(`${baseUrl}/history.json`, { headers });
+                if (res.ok) {
+                    let data = await res.json();
+                    invoiceHistory = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+                    successCount++;
+                }
+            } catch (e) {}
+
+            if (successCount > 0) {
+                renderProductManagement();
+                renderHistoryList();
+                alert("✅ Đồng bộ dữ liệu theo ID từ GitHub thành công!");
+            } else {
+                loadLocalFallback();
+            }
+        }
+
+        function loadLocalFallback() {
+            const savedP = localStorage.getItem("product_database_pk");
+            if (savedP) products = JSON.parse(savedP);
+
+            const savedC = localStorage.getItem("customer_database_pk");
+            if (savedC) customers = JSON.parse(savedC);
+
+            const savedH = localStorage.getItem("invoice_history_pk");
+            if (savedH) invoiceHistory = JSON.parse(savedH);
+
+            renderProductManagement();
+        }
+
+        window.addEventListener('load', () => {
+            fetchAllDataFromGitHub();
+        });
+
+        // Xử lý lưu hóa đơn và tích điểm theo ID khách hàng (Key chuẩn hóa không dấu)
+        const OrderHistory = {
+            async saveOrder(orderItems, totalAmount, customerName) {
+                const rawCust = customerName ? customerName.trim() : "Khách lẻ";
+                const custId = removeDiacritics(rawCust).replace(/\s+/g, "_");
+                const invId = "HD" + Date.now().toString().slice(-6);
+
+                const newInvoice = {
+                    id: invId,
+                    time: new Date().toLocaleString("vi-VN"),
+                    customer: rawCust,
+                    items: orderItems,
+                    total: totalAmount
+                };
+
+                // Lưu vào Object Hóa đơn theo ID (Không bao giờ ghi đè hóa đơn cũ)
+                invoiceHistory[invId] = newInvoice;
+
+                // Cập nhật Khách hàng theo ID
+                if (!customers[custId]) {
+                    customers[custId] = { name: rawCust, totalSpent: 0, points: 0 };
+                }
+                customers[custId].totalSpent += totalAmount;
+                customers[custId].points = parseFloat((customers[custId].totalSpent / 1000000).toFixed(2));
+
+                // Lưu trực tiếp lên GitHub theo từng ID an toàn
+                await saveFileToGitHub(`history.json`, invoiceHistory, `Add invoice ${invId}`);
+                await saveFileToGitHub(`customers.json`, customers, `Update customer ${custId}`);
+            },
+            getHistory() {
+                // Chuyển Object hóa đơn thành mảng để hiển thị gần nhất lên trên
+                return Object.values(invoiceHistory).reverse();
+            }
+        };
+
+        function checkCustomerPoints(nameVal) {
+            const infoBox = document.getElementById("customerPointInfo");
+            const nameDisplay = document.getElementById("custNameDisplay");
+            const pointsDisplay = document.getElementById("custPointsDisplay");
+            const cleanName = nameVal.trim();
+
+            if (!cleanName) {
+                infoBox.style.display = "none";
+                return;
+            }
+
+            const custId = removeDiacritics(cleanName).replace(/\s+/g, "_");
+            let cust = customers[custId];
+            let currentPoints = cust ? cust.points : 0;
+
+            nameDisplay.innerText = `Khách: ${cleanName}`;
+            pointsDisplay.innerText = `⭐ Điểm tích luỹ: ${currentPoints} (Tổng mua: ${(cust ? cust.totalSpent : 0).toLocaleString()}đ)`;
+            infoBox.style.display = "flex";
+        }
+
+        let orderItems = [];
+        let currentPage = 1;
+        const pageSize = 50;
+        let searchManageKeyword = "";
+        let isConfigUnlocked = false;
+        const numberMap = { "một":1, "mọt":1, "1":1, "hai":2, "2":2, "ba":3, "3":3, "bốn":4, "4":4, "năm":5, "5":5, "sáu":6, "6":6, "bảy":7, "7":7, "tám":8, "8":8, "chín":9, "9":9, "mười":10, "10":10 };
+
+        function refreshHeader() {
+            document.getElementById("lblStoreName").innerText = currentConfig.storeName;
+            document.getElementById("lblStoreContact").innerText = `Hotline: ${currentConfig.hotline} | Địa chỉ: ${currentConfig.address}`;
+        }
+        refreshHeader();
+
+        function switchTab(tab) {
+            if (tab === 'config') {
+                if (!isConfigUnlocked) {
+                    const pwd = prompt("Nhập mật khẩu cài đặt cửa hàng (Mặc định: 2012):");
+                    if (pwd !== "2012") {
+                        alert("Mật khẩu không đúng! Không thể truy cập cài đặt.");
+                        return;
+                    }
+                    isConfigUnlocked = true;
+                }
+            }
+
+            document.querySelectorAll('.top-nav button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.section-view').forEach(v => v.classList.remove('active'));
+            if (tab === 'pos') {
+                document.getElementById('navPos').classList.add('active');
+                document.getElementById('viewPos').classList.add('active');
+            } else if (tab === 'data') {
+                document.getElementById('navData').classList.add('active');
+                document.getElementById('viewData').classList.add('active');
+                currentPage = 1;
+                searchManageKeyword = "";
+                document.getElementById("searchManageBox").value = "";
+                renderProductManagement();
+            } else if (tab === 'config') {
+                document.getElementById('navConfig').classList.add('active');
+                document.getElementById('viewConfig').classList.add('active');
+                loadConfigToForm();
+            }
+        }
+
+        function removeDiacritics(str) {
+            return str.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().trim();
+        }
+
+        function handleInput(keyword) {
+            const listDiv = document.getElementById("suggestionsList");
+            if (!keyword.trim()) { listDiv.style.display = "none"; return; }
+            const kw = removeDiacritics(keyword);
+            if (parseAIOrder(kw)) {
+                document.getElementById("searchProduct").value = "";
+                listDiv.style.display = "none";
+                return;
+            }
+            const prodList = Object.entries(products).map(([id, p]) => ({ id, ...p }));
+            const matched = prodList.filter(p => removeDiacritics(p.name).includes(kw) || p.aliases.some(a => removeDiacritics(a).includes(kw)));
+            if (matched.length > 0) {
+                listDiv.innerHTML = matched.map(p => `
+                    <div class="suggestion-item" onclick="selectProduct('${p.id}')">
+                        <span>[${p.id}] ${p.name}</span>
+                        <b>${p.price.toLocaleString()}đ</b>
+                    </div>
+                `).join("");
+                listDiv.style.display = "block";
+            } else {
+                listDiv.innerHTML = `<div class="suggestion-item" style="color: #888;">Không tìm thấy sản phẩm</div>`;
+                listDiv.style.display = "block";
+            }
+        }
+
+        function selectProduct(id) { 
+            addProduct(id, 1); 
+            document.getElementById("searchProduct").value = ""; 
+            document.getElementById("suggestionsList").style.display = "none"; 
+        }
+
+        function addProduct(id, qty) {
+            const product = products[id];
+            if (!product) return;
+            const existing = orderItems.find(i => i.id === id);
+            if (existing) {
+                existing.quantity += qty;
+                if (existing.quantity <= 0) {
+                    orderItems = orderItems.filter(i => i.id !== id);
+                }
+            } else if (qty > 0) {
+                orderItems.push({ id, product, quantity: qty });
+            }
+            renderOrders();
+        }
+
+        function updateQuantity(id, delta) {
+            const item = orderItems.find(i => i.id === id);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    orderItems = orderItems.filter(i => i.id !== id);
+                }
+                renderOrders();
+            }
+        }
+
+        function addOtherService() {
+            const name = document.getElementById("osName").value.trim();
+            const price = parseInt(document.getElementById("osPrice").value) || 0;
+            if (!name || price <= 0) {
+                alert("Vui lòng nhập tên dịch vụ và giá tiền hợp lệ!");
+                return;
+            }
+            const customId = "other_" + Date.now();
+            products[customId] = {
+                name: name,
+                aliases: [removeDiacritics(name)],
+                price: price
+            };
+            orderItems.push({ id: customId, product: products[customId], quantity: 1 });
+            document.getElementById("osName").value = "";
+            document.getElementById("osPrice").value = "";
+            renderOrders();
+        }
+
+        function handleCameraScan(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            alert("📷 AI Camera đang quét sản phẩm...");
+            setTimeout(() => {
+                const keys = Object.keys(products);
+                if (keys.length > 0) {
+                    const randomId = keys[Math.floor(Math.random() * keys.length)];
+                    addProduct(randomId, 1);
+                    alert(`✅ Đã nhận diện và thêm: ${products[randomId].name}`);
+                }
+            }, 1000);
+            event.target.value = "";
+        }
+
+        function handleInvoiceScan(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            alert("🔍 AI đang phân tích hoá đơn viết tay...");
+            setTimeout(() => {
+                const keys = Object.keys(products);
+                if (keys.length > 0) {
+                    addProduct(keys[0], 1);
+                }
+                alert("✅ Quét hoá đơn viết tay thành công!");
+                event.target.value = "";
+            }, 1200);
+        }
+
+        function extractQty(text, alias) {
+            const parts = text.split(alias);
+            if (!parts.length) return 1;
+            const before = parts[0].trim().split(/\s+/);
+            if (!before.length) return 1;
+            return numberMap[before[before.length - 1]] || 1;
+        }
+
+        function parseAIOrder(text) {
+            let cleanText = removeDiacritics(text);
+            let matched = false;
+            for (const [id, p] of Object.entries(products)) {
+                for (const a of p.aliases) {
+                    let cleanAlias = removeDiacritics(a);
+                    if (cleanText.includes(cleanAlias)) {
+                        const q = extractQty(cleanText, cleanAlias);
+                        addProduct(id, q);
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            return matched;
+        }
+
+        function triggerWebSpeech() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const btn = document.getElementById("btnVoice");
+            if (!SR) {
+                alert("Trình duyệt không hỗ trợ nhận diện giọng nói.");
+                return;
+            }
+            const rec = new SR();
+            rec.lang = "vi-VN";
+            rec.interimResults = false;
+            rec.onstart = () => { btn.classList.add("listening"); btn.innerText = "⏳ AI"; };
+            rec.onresult = (e) => {
+                const t = e.results[0][0].transcript;
+                document.getElementById("searchProduct").value = t;
+                handleInput(t);
+            };
+            rec.onend = () => { btn.classList.remove("listening"); btn.innerText = "🎙️ AI"; };
+            rec.onerror = () => { btn.classList.remove("listening"); btn.innerText = "🎙️ AI"; };
+            rec.start();
+        }
+
+        function renderOrders() {
+            const c = document.getElementById("rvOrders");
+            const f = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
+            c.innerHTML = orderItems.map(i => `
+                <div class="order-item">
+                    <span class="name"><b>[${i.id}] ${i.product.name}</b><br><small style="color:#666">${f.format(i.product.price)}</small></span>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="updateQuantity('${i.id}', -1)">-</button>
+                        <span class="qty-num">${i.quantity}</span>
+                        <button class="qty-btn" onclick="updateQuantity('${i.id}', 1)">+</button>
+                    </div>
+                    <span class="price">${f.format(i.product.price * i.quantity)}</span>
+                </div>
+            `).join("");
+            const total = orderItems.reduce((s, i) => s + (i.product.price * i.quantity), 0);
+            document.getElementById("tvTotal").innerText = "Tổng: " + f.format(total);
+        }
+
+        function clearCurrentOrder() { 
+            orderItems = []; 
+            document.getElementById("customerName").value = "";
+            document.getElementById("customerPointInfo").style.display = "none";
+            renderOrders(); 
+            document.getElementById("paymentArea").style.display = "none"; 
+        }
+
+        let pendingTotal = 0;
+        let pendingItems = [];
+        let pendingCustomer = "";
+
+        function initiateCheckout() {
+            if (!orderItems.length) return alert("Chưa có món nào trong đơn hàng!");
+            pendingItems = [...orderItems];
+            pendingTotal = orderItems.reduce((s, i) => s + (i.product.price * i.quantity), 0);
+            pendingCustomer = document.getElementById("customerName").value.trim() || "Khách lẻ";
+
+            OrderHistory.saveOrder(pendingItems, pendingTotal, pendingCustomer);
+            drawInvoiceImage(pendingItems, pendingTotal, pendingCustomer);
+
+            const b = currentConfig.bankId;
+            const a = currentConfig.accountNo;
+            const n = encodeURIComponent(currentConfig.accountName);
+            const d = encodeURIComponent("Thanh toan HD");
+            document.getElementById("ivQrCode").src = `https://img.vietqr.io/image/${b}-${a}-compact2.png?amount=${pendingTotal}&addInfo=${d}&accountName=${n}`;
+
+            document.getElementById("paymentArea").style.display = "flex";
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function drawInvoiceImage(items, total, customer) {
+            const canvas = document.getElementById("invoiceCanvas");
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#333333";
+            ctx.font = "bold 16px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(currentConfig.storeName, canvas.width / 2, 25);
+
+            ctx.font = "12px sans-serif";
+            ctx.fillText(`Hotline: ${currentConfig.hotline}`, canvas.width / 2, 43);
+            ctx.fillText(`Đ/c: ${currentConfig.address}`, canvas.width / 2, 60);
+            ctx.fillText("--------------------------------------------------", canvas.width / 2, 75);
+
+            ctx.textAlign = "left";
+            ctx.font = "bold 13px sans-serif";
+            ctx.fillText(`Mã HĐ: HD${Date.now().toString().slice(-6)}`, 20, 95);
+            ctx.fillText(`Khách hàng: ${customer}`, 20, 115);
+            ctx.fillText(`Thời gian: ${new Date().toLocaleString("vi-VN")}`, 20, 135);
+
+            ctx.fillText("--------------------------------------------------", 20, 150);
+            ctx.font = "bold 12px sans-serif";
+            ctx.fillText("SL  Tên món", 20, 170);
+            ctx.textAlign = "right";
+            ctx.fillText("Thành tiền", canvas.width - 20, 170);
+
+            let y = 190;
+            ctx.font = "12px sans-serif";
+            items.forEach(i => {
+                ctx.textAlign = "left";
+                ctx.fillText(`${i.quantity}x  ${i.product.name}`, 20, y);
+                ctx.textAlign = "right";
+                ctx.fillText((i.product.price * i.quantity).toLocaleString() + "đ", canvas.width - 20, y);
+                y = y + 20;
+            });
+
+            ctx.textAlign = "left";
+            ctx.fillText("--------------------------------------------------", 20, y + 5);
+            y = y + 25;
+            ctx.font = "bold 15px sans-serif";
+            ctx.fillStyle = "#F44336";
+            ctx.fillText("TỔNG TIỀN:", 20, y);
+            ctx.textAlign = "right";
+            ctx.fillText(total.toLocaleString() + " VNĐ", canvas.width - 20, y);
+
+            ctx.fillStyle = "#666666";
+            ctx.font = "italic 11px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Cảm ơn quý khách và hẹn gặp lại!", canvas.width / 2, y + 35);
+        }
+
+        function confirmSaveAndFinish() {
+            clearCurrentOrder();
+            alert("Đã hoàn tất thanh toán và đồng bộ GitHub thành công!");
+        }
+
+        function cancelPayment() {
+            document.getElementById("paymentArea").style.display = "none";
+        }
+
+        function toggleHistory() {
+            const box = document.getElementById("historyContainer");
+            if (box.style.display === "block") { box.style.display = "none"; } 
+            else {
+                renderHistoryList();
+                box.style.display = "block";
+            }
+        }
+
+        function renderHistoryList() {
+            const history = OrderHistory.getHistory();
+            const listEl = document.getElementById("historyList");
+            if (history.length === 0) { 
+                listEl.innerHTML = "<i style='color:#777'>Chưa có lịch sử giao dịch.</i>"; 
+            } else {
+                const f = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
+                listEl.innerHTML = history.map((h) => `
+                    <div class="history-item" onclick="viewInvoiceDetailById('${h.id}')">
+                        <span><b>[${h.id}]</b> (${h.customer})</span>
+                        <span style="color:#F44336; font-weight:bold;">${f.format(h.total)} ➡️</span>
+                    </div>
+                `).join("");
+            }
+        }
+
+        function viewInvoiceDetailById(invId) {
+            const h = invoiceHistory[invId];
+            if (!h) return;
+
+            document.getElementById("modalTitle").innerText = `Hoá đơn: ${h.id}`;
+            document.getElementById("modalTime").innerText = `Khách: ${h.customer} | Thời gian: ${h.time}`;
+            
+            const f = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
+            const itemsHtml = h.items.map(i => `
+                <div style="display:flex; justify-content:space-between; padding: 4px 0; font-size:14px;">
+                    <span>${i.quantity}x ${i.product.name}</span>
+                    <b>${f.format(i.product.price * i.quantity)}</b>
+                </div>
+            `).join("");
+
+            document.getElementById("modalItemsList").innerHTML = itemsHtml;
+            document.getElementById("modalTotal").innerText = `Tổng: ${f.format(h.total)}`;
+            document.getElementById("modalDetail").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("modalDetail").style.display = "none";
+        }
+
+        function openAddProductModal() {
+            document.getElementById("modalProductTitle").innerText = "Thêm sản phẩm mới (ID PK)";
+            document.getElementById("pId").value = "0" + (Object.keys(products).length + 1);
+            document.getElementById("pId").disabled = false;
+            document.getElementById("pName").value = "";
+            document.getElementById("pPrice").value = "";
+            document.getElementById("modalProduct").style.display = "flex";
+        }
+
+        function closeProductModal() {
+            document.getElementById("modalProduct").style.display = "none";
+        }
+
+        function filterManageProducts(keyword) {
+            searchManageKeyword = removeDiacritics(keyword);
+            currentPage = 1;
+            renderProductManagement();
+        }
+
+        function renderProductManagement() {
+            const listEl = document.getElementById("productListManage");
+            const paginationBox = document.getElementById("paginationBox");
+
+            let prodEntries = Object.entries(products);
+            if (searchManageKeyword) {
+                prodEntries = prodEntries.filter(([id, p]) => {
+                    return id.includes(searchManageKeyword) || removeDiacritics(p.name).includes(searchManageKeyword) || p.aliases.some(a => removeDiacritics(a).includes(searchManageKeyword));
+                });
+            }
+
+            const totalPages = Math.ceil(prodEntries.length / pageSize) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageItems = prodEntries.slice(start, end);
+
+            if (pageItems.length === 0) {
+                listEl.innerHTML = "<div style='text-align:center; color:#777; padding: 10px;'>Không tìm thấy sản phẩm phù hợp.</div>";
+                paginationBox.style.display = "none";
+            } else {
+                paginationBox.style.display = "flex";
+                listEl.innerHTML = pageItems.map(([id, p]) => {
+                    return `
+                        <div class="product-manage-item">
+                            <div>
+                                <b>[ID: ${id}] ${p.name} - ${p.price.toLocaleString()}đ</b>
+                                <span>Từ khóa: ${p.aliases.join(", ")}</span>
+                            </div>
+                            <div>
+                                <button class="btn-sm" style="background:#007AFF; color:white;" onclick="editProductItem('${id}')">Sửa</button>
+                                <button class="btn-sm btn-danger" onclick="deleteProductItem('${id}')">Xoá</button>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+            }
+
+            document.getElementById("pageInfo").innerText = `Trang ${currentPage} / ${totalPages}`;
+            document.getElementById("btnPrevPage").disabled = (currentPage <= 1);
+            document.getElementById("btnNextPage").disabled = (currentPage >= totalPages);
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderProductManagement();
+        }
+
+        async function saveProductItem() {
+            const id = document.getElementById("pId").value.trim();
+            const name = document.getElementById("pName").value.trim();
+            const price = parseInt(document.getElementById("pPrice").value) || 0;
+
+            if (!id || !name || price <= 0) return alert("Vui lòng nhập đầy đủ ID, tên và giá hợp lệ!");
+            
+            const generatedAlias = removeDiacritics(name);
+            
+            // Cập nhật hoặc thêm mới tuyệt đối an toàn theo ID (Primary Key)
+            products[id] = {
+                name: name,
+                aliases: [generatedAlias],
+                price: price
+            };
+
+            const success = await saveFileToGitHub("products.json", products, `Update product ID ${id}`);
+            if (success) {
+                alert(`✅ Đã lưu thành công sản phẩm với ID [${id}] lên GitHub!`);
+            }
+
+            closeProductModal();
+            renderProductManagement();
+        }
+
+        function editProductItem(id) {
+            const p = products[id];
+            if (!p) return;
+            document.getElementById("modalProductTitle").innerText = `Chỉnh sửa sản phẩm [ID: ${id}]`;
+            document.getElementById("pId").value = id;
+            document.getElementById("pId").disabled = true; // Khóa ID không cho sửa khóa chính
+            document.getElementById("pName").value = p.name;
+            document.getElementById("pPrice").value = p.price;
+            document.getElementById("modalProduct").style.display = "flex";
+        }
+
+        async function deleteProductItem(id) {
+            if (confirm(`Bạn có chắc chắn muốn xoá sản phẩm có ID [${id}]?`)) {
+                delete products[id]; // Xoá chính xác theo key ID giống lệnh DELETE FROM table WHERE id = ...
+                const success = await saveFileToGitHub("products.json", products, `Delete product ID ${id}`);
+                if (success) {
+                    alert(`🗑️ Đã xoá thành công sản phẩm ID [${id}] trên GitHub!`);
+                }
+                renderProductManagement();
+            }
+        }
+
+        function loadConfigToForm() {
+            document.getElementById("cfgStoreName").value = currentConfig.storeName;
+            document.getElementById("cfgHotline").value = currentConfig.hotline;
+            document.getElementById("cfgAddress").value = currentConfig.address;
+            document.getElementById("cfgBankId").value = currentConfig.bankId;
+            document.getElementById("cfgAccountNo").value = currentConfig.accountNo;
+            document.getElementById("cfgAccountName").value = currentConfig.accountName;
+            document.getElementById("cfgGhToken").value = currentConfig.ghToken || "";
+            document.getElementById("cfgGhOwner").value = currentConfig.ghOwner || "";
+            document.getElementById("cfgGhRepo").value = currentConfig.ghRepo || "";
+            document.getElementById("cfgGhBranch").value = currentConfig.ghBranch || "main";
+        }
+
+        async function saveStoreConfigSettings() {
+            currentConfig = {
+                storeName: document.getElementById("cfgStoreName").value.trim(),
+                hotline: document.getElementById("cfgHotline").value.trim(),
+                address: document.getElementById("cfgAddress").value.trim(),
+                bankId: document.getElementById("cfgBankId").value.trim(),
+                accountNo: document.getElementById("cfgAccountNo").value.trim(),
+                accountName: document.getElementById("cfgAccountName").value.trim().toUpperCase(),
+                ghToken: document.getElementById("cfgGhToken").value.trim(),
+                ghOwner: document.getElementById("cfgGhOwner").value.trim(),
+                ghRepo: document.getElementById("cfgGhRepo").value.trim(),
+                ghBranch: document.getElementById("cfgGhBranch").value.trim() || "main"
+            };
+
+            localStorage.setItem("store_config", JSON.stringify(currentConfig));
+            refreshHeader();
+
+            const success = await saveFileToGitHub("config.json", currentConfig, `Update store config`);
+            if (success) {
+                alert("💾 Đã lưu và đồng bộ tệp config.json lên GitHub thành công!");
+                switchTab('pos');
+            }
+        }
+    </script>
+</body>
+</html>

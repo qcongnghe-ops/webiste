@@ -1,0 +1,39 @@
+{
+    "01": {
+        "name": "Cà phê đen đá",
+        "aliases": [
+            "ca phe den da",
+            "den da"
+        ],
+        "price": 20000
+    },
+    "02": {
+        "name": "Cà phê sữa đá",
+        "aliases": [
+            "ca phe sua da",
+            "sua da"
+        ],
+        "price": 25000
+    },
+    "03": {
+        "name": "Bạc xỉu",
+        "aliases": [
+            "bac xiu"
+        ],
+        "price": 25000
+    },
+    "04": {
+        "name": "Trà đào",
+        "aliases": [
+            "tra dao"
+        ],
+        "price": 30000
+    },
+    "05": {
+        "name": "Nước suối",
+        "aliases": [
+            "nuoc suoi"
+        ],
+        "price": 10000
+    }
+}
